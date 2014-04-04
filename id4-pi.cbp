@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="id4-pi" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/id4-pi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="-V" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-DDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add library="pthread" />
+					<Add library="rt" />
+					<Add library="curl" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/id4-pi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="w" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="pthread" />
+					<Add library="rt" />
+					<Add library="curl" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-Wno-multichar" />
+			<Add option="-DLINUX" />
+		</Compiler>
+		<Unit filename="ID4Clock.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="ID4Serial.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="ID4Serial.h" />
+		<Unit filename="ftpupload.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="id4-pi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="id4-pi.h" />
+		<Unit filename="serport.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="serport.h" />
+		<Unit filename="webio/linuxdefs.h" />
+		<Unit filename="webio/webclib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webio/webfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webio/webfs.h" />
+		<Unit filename="webio/webio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webio/webio.h" />
+		<Unit filename="webio/webobjs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webio/websys.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webio/websys.h" />
+		<Unit filename="webio/webutils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="webmain.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="wsfcode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="wsfdata.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="wsfdata.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
