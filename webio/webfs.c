@@ -214,7 +214,7 @@ fs_fgetsize(void *fd)
 /***************** Optional embedded FS starts here *****************/
 #ifdef USE_EMFILES
 
-#include "wsfdata.h"
+#include "../wsfdata.h"
 
 /* Set up master list of embedded files. If "efslist[]" is an unresolved
  * external when you link then you have neglected to provide the data

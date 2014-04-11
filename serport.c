@@ -127,6 +127,10 @@ int ReadSerPort(int fd, unsigned char* psResponse, int iMax, unsigned char cCmd)
             printf("ioctl failed %d, %s\n", errno, strerror(errno));
             return -1;
         }
+
+        if (nAvailable == 0)
+            continue;
+
         // Check buffer overrun
         if (nAvailable > (iMax - nRead))
         {
@@ -159,9 +163,9 @@ int ReadSerPort(int fd, unsigned char* psResponse, int iMax, unsigned char cCmd)
 // closes the serial port
 void CloseSerPort(int fd)
 {
-	// you may want to restore the saved port attributes
     if (fd > 0)
     {
+        tcflush(fd, TCIOFLUSH);
         close(fd);
-    } // end if
+    }
 }

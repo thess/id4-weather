@@ -6,7 +6,7 @@
 // Project include
 
 #define VERSION_MAJOR   0
-#define VERSION_MINOR   2
+#define VERSION_MINOR   8
 
 // boolean constants
 #ifndef TRUE
@@ -31,5 +31,7 @@ extern struct tm tmLocalTime;
 extern pthread_mutex_t  id4_mutex;
 
 extern int fPort;
+extern int bNonBlock;
+extern char sPortName[];
 
 #endif // ID4_PI_H_INCLUDED

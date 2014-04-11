@@ -107,13 +107,13 @@ void *xID4Clock(void *args)
             LogWeatherData(0);
 
             // Sync up date/time
-            if (SetDateTime(fPort, '6') < 0)
+            if (SetDateTime('6') < 0)
                 LogMessage(xCmd.time, "--Set clock failed--\n");
 
             // Reset weather data
-            ID4_LOCK;
-            SendSingleCmd(fPort, 'C');
-            ID4_UNLOCK;
+            ID4_LOCK();
+            SendSingleCmd('C');
+            ID4_UNLOCK();
             // For time sync check
             iSaveDST = tmLocalTime.tm_isdst;
 
@@ -130,14 +130,14 @@ void *xID4Clock(void *args)
             // Check for DST change since last time sync
             if (iSaveDST != tmLocalTime.tm_isdst)
             {
-                if (SetDateTime(fPort, '6') < 0)
+                if (SetDateTime('6') < 0)
                     LogMessage(xCmd.time, "--Set clock DST failed--\n");
                 iSaveDST = tmLocalTime.tm_isdst;
             }
             break;
 
         case ID4_TIME_SET:
-            if (SetDateTime(fPort, '6') < 0)
+            if (SetDateTime('6') < 0)
                 LogMessage(xCmd.time, "--Set clock failed--\n");
             iSaveDST = tmLocalTime.tm_isdst;
             break;
@@ -294,7 +294,7 @@ void LogMinMaxData(int xTime)
 	unsigned char sWBuf1[MMTEMP_BUF_SIZE], sWBuf2[MMPRES_BUF_SIZE];
 
     do {
-        rc = ReadMinMaxData(fPort, sWBuf1, sWBuf2);
+        rc = ReadMinMaxData(sWBuf1, sWBuf2);
         if (rc)
         {
             rc = ReSyncID4();
@@ -325,7 +325,7 @@ void LogWeatherData(int xTime)
 	if (sWBuf)
 	{
        do {
-            rc = ReadWeather(fPort, sWBuf);
+            rc = ReadWeather(sWBuf);
             if (rc)
             {
                 rc = ReSyncID4();

@@ -33,7 +33,7 @@ wi_cvariables(wi_sess * sess, int token)
 		sWBuf = malloc(WEATHER_BUF_SIZE);
 		if (sWBuf)
 		{
-			if (ReadWeather(fPort, sWBuf) == 0)
+			if (ReadWeather(sWBuf) == 0)
 			{		// Convert presure
 				nPres1 = (sWBuf[11] + 2900) / 100;
 				nPres2 = (sWBuf[11] + 2900) - (nPres1 * 100);

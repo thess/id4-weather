@@ -59,8 +59,8 @@ int fPort;
 int bNonBlock;
 
 // Local vars (command options)
-static char sPortName[16];
-static int bDaemonize;
+char sPortName[16];
+int bDaemonize;
 static int cImmediate;
 
 // Threads, mutexes and queues
@@ -165,7 +165,7 @@ int ReSyncID4(void)
         if (fPort < 0)
             break;
         // Read and verify version
-        if (ReadVersion(fPort, sVers) == 0)
+        if (ReadVersion(sVers) == 0)
         {
             if (memcmp(sVers, sFirmware, 4) != 0)
             {
@@ -195,6 +195,7 @@ void ShowHelp(void)
     printf("   -H          Show weather history (31 days) and exit\n");
     printf("   -V          Show ID4001-5 firmware version and exit\n");
     printf("   -T          Set ID4001 time from system\n");
+    printf("   -C          Clear current weather data memory\n");
     printf("   -B          Run in background (daemonize)\n");
     printf("   -n          Open serial port in non-block mode\n");
     printf("   -r          Record serial comms to file: weather.log\n");
@@ -207,7 +208,7 @@ void parse_options(int argc, char **argv)
     int opt;
 
     optind = 0;
-    while ((opt = getopt(argc, argv, "?Bhs:TWVMHnr")) != -1)
+    while ((opt = getopt(argc, argv, "?Bhs:CTWVMHnr")) != -1)
     {
         switch (opt) {
         case 'B':
@@ -225,6 +226,7 @@ void parse_options(int argc, char **argv)
             break;
 
         // Immediate commands
+        case 'C':
         case 'T':
         case 'W':
         case 'H':
@@ -298,6 +300,10 @@ int main(int argc, char **argv)
     // Init serial ID4 interface mutex
     pthread_mutex_init(&id4_mutex, NULL);
 
+    // Close (for now)
+
+    CloseSerPort(fPort);
+    fPort = -1;
 #if defined(RECORD_MODE)
     if (bRecording)
     {
@@ -314,15 +320,15 @@ int main(int argc, char **argv)
     {
     case'T':
         // Set ID4001 time to system time
-        rc = ReadDateTime(fPort, sTimeBuf);
+        rc = ReadDateTime(sTimeBuf);
         if (rc != 0)
             exit(EXIT_FAILURE);
 
         ShowDateTime("Time before: ", sTimeBuf);
 
         printf("Setting date-time to system time...\n");
-        SetDateTime(fPort, '6');
-        rc = ReadDateTime(fPort, sTimeBuf);
+        SetDateTime('6');
+        rc = ReadDateTime(sTimeBuf);
         if (rc != 0)
             exit(EXIT_FAILURE);
 
@@ -332,7 +338,7 @@ int main(int argc, char **argv)
     case 'W':
         // Display weather info and exit
         do {
-            rc = ReadWeather(fPort, sWeatherBuf);
+            rc = ReadWeather(sWeatherBuf);
             if (rc)
             {
                 rc = ReSyncID4();
@@ -350,15 +356,22 @@ int main(int argc, char **argv)
         exit(EXIT_SUCCESS);
 
     case 'H':
-        ShowHistory(fPort);
+        ShowHistory();
         exit(EXIT_SUCCESS);
 
     case 'M':
-        ShowMinMax(fPort);
+        ShowMinMax();
         exit(EXIT_SUCCESS);
 
     case 'V':
-        ShowVersion(fPort);
+        ShowVersion();
+        exit(EXIT_SUCCESS);
+
+    case 'C':
+        // Reset weather data
+        ID4_LOCK();
+            SendSingleCmd('C');
+        ID4_UNLOCK();
         exit(EXIT_SUCCESS);
 
     // Ignore all others

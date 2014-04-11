@@ -20,7 +20,7 @@
 #include "webio/websys.h"
 #include "webio/webio.h"
 #include "webio/webfs.h"
-#include "webio/wsfdata.h"
+#include "wsfdata.h"
 
 #if defined(_FREERTOS)
 #include "Board.h"

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "id4-pi.h"
 #include "ID4Serial.h"
@@ -49,7 +50,7 @@ static void DumpResponseToFile(FILE *fLog, char cmd, unsigned char *sBuf, int nS
 //
 // Send and verify single letter command
 //
-int SendSingleCmd(int fPort, unsigned char sCmd)
+int SendSingleCmd(unsigned char sCmd)
 {
     int nErr;
     unsigned char sCmdBuf;
@@ -70,7 +71,7 @@ int SendSingleCmd(int fPort, unsigned char sCmd)
 // Set ID4001 to 60hz clock mode,
 // Set current date-time from PC
 //
-int SetDateTime(int fPort, unsigned char sClkMode)
+int SetDateTime(unsigned char sClkMode)
 {
     int rc = 0;
     int nRet;
@@ -80,15 +81,17 @@ int SetDateTime(int fPort, unsigned char sClkMode)
 	time_t ltime;
 	struct tm *timenow;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     do {
         // Force clock mode
-        nRet = SendSingleCmd(fPort, sClkMode);
+        nRet = SendSingleCmd(sClkMode);
         if (nRet < 0)
             break;
 
-        // Get current system time
+        sleep(1);
+
+        // Get current system date/time
         ltime = time(NULL);
         timenow = localtime(&ltime);
 
@@ -114,6 +117,10 @@ int SetDateTime(int fPort, unsigned char sClkMode)
             break;
         }
 
+        // Wait 100ms between commands
+        usleep(100 * 1000);
+
+        // Use current time
         sCmdBuf[0] = 't';
         sCmdBuf[1] = timenow->tm_sec;
         sCmdBuf[2] = timenow->tm_min;
@@ -151,7 +158,7 @@ int SetDateTime(int fPort, unsigned char sClkMode)
 
     } while(FALSE);
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     return (nRet < 0) ? nRet : rc;
 }
@@ -159,13 +166,13 @@ int SetDateTime(int fPort, unsigned char sClkMode)
 //
 // Dump date-time info into single buffer
 //
-int ReadDateTime(int fPort, unsigned char *sTimeBuf)
+int ReadDateTime(unsigned char *sTimeBuf)
 {
 	int nRet;
 	int rc = 0;
 	unsigned char sCmd;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     do {
         sCmd = 'T';
@@ -197,7 +204,7 @@ int ReadDateTime(int fPort, unsigned char *sTimeBuf)
     #endif
     } while(FALSE);
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     return (nRet < 0) ? nRet : rc;
 }
@@ -205,12 +212,12 @@ int ReadDateTime(int fPort, unsigned char *sTimeBuf)
 //
 // Fetch current weather data
 //
-int ReadWeather(int fPort, unsigned char *sWeatherBuf)
+int ReadWeather(unsigned char *sWeatherBuf)
 {
 	int nRet;
 	unsigned char sCmd;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     do {
         sCmd = 'W';
@@ -227,7 +234,7 @@ int ReadWeather(int fPort, unsigned char *sWeatherBuf)
 #endif
     } while(FALSE);
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     return (nRet < 0) ? nRet : 0;
 }
@@ -235,12 +242,12 @@ int ReadWeather(int fPort, unsigned char *sWeatherBuf)
 //
 // Fetch current min/max data
 //
-int ReadMinMaxData(int fPort, unsigned char *sBuf1, unsigned char *sBuf2)
+int ReadMinMaxData(unsigned char *sBuf1, unsigned char *sBuf2)
 {
     int nRet;
     unsigned char sCmd;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     do {
         sCmd = 'e';
@@ -252,6 +259,8 @@ int ReadMinMaxData(int fPort, unsigned char *sBuf1, unsigned char *sBuf2)
         if (nRet < 0)
             break;
 
+	usleep(100 * 1000);
+
         sCmd = 'b';
         nRet = WriteSerPort(fPort, &sCmd, 1);
         if (nRet < 0)
@@ -260,7 +269,7 @@ int ReadMinMaxData(int fPort, unsigned char *sBuf1, unsigned char *sBuf2)
         nRet = ReadSerPort(fPort, sBuf2, MMPRES_BUF_SIZE, sCmd);
     } while(FALSE);
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     return (nRet < 0) ? nRet : 0;
 }
@@ -305,14 +314,14 @@ void ShowWeather(char *sPrefix, unsigned char *sWeatherBuf)
 //
 // Fetch and display current min-max data w/ date-time info
 //
-void ShowMinMax(int fPort)
+void ShowMinMax(void)
 {
     int rc;
     int nPres1, nPres2;
     unsigned char sMinMax1[MMTEMP_BUF_SIZE], sMinMax2[MMPRES_BUF_SIZE];
 
     do {
-        rc = ReadMinMaxData(fPort, sMinMax1, sMinMax2);
+        rc = ReadMinMaxData(sMinMax1, sMinMax2);
         if (rc)
         {
             rc = ReSyncID4();
@@ -329,6 +338,12 @@ void ShowMinMax(int fPort)
         return;
     }
 
+    if ((sMinMax1[5] > 11) || (sMinMax1[10] > 11) || (sMinMax1[15] > 12))
+    {
+        printf("Bad temp/wind data: %d, %d, %d\n", sMinMax1[5], sMinMax1[10], sMinMax1[15]);
+        return;
+    }
+
     printf("Tlow = %d on %d-%s %d:%02d %s,", sMinMax1[1] - 40, sMinMax1[4], sMonTab[sMinMax1[5] - 1],
             sMinMax1[3] & 0x7F, sMinMax1[2], sAmPm(sMinMax1[3]));
 
@@ -341,6 +356,12 @@ void ShowMinMax(int fPort)
 
     nPres1 = (sMinMax2[1] + 2900) / 100;
     nPres2 = (sMinMax2[1] + 2900) - (nPres1 * 100);
+
+    if ((sMinMax2[5] > 12) || (sMinMax2[10] > 12))
+    {
+        printf("Bad pressure data: %d, %d\n", sMinMax2[5], sMinMax2[10]);
+        return;
+    }
 
     printf("Plow = %d.%02d on %d-%s %d:%02d %s,  ", nPres1, nPres2, sMinMax2[4], sMonTab[sMinMax2[5] - 1],
             sMinMax2[3] & 0x7F, sMinMax2[2], sAmPm(sMinMax2[3]));
@@ -357,7 +378,7 @@ void ShowMinMax(int fPort)
 //
 // Display last 31 days weather high/lows
 //
-void ShowHistory(int fPort)
+void ShowHistory(void)
 {
     int nErr;
     int nPres1, nPres2;
@@ -367,22 +388,22 @@ void ShowHistory(int fPort)
     unsigned char sHistory[466];
     unsigned char *sRecord;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     sCmd = 'i';
 	nErr = WriteSerPort(fPort, &sCmd, 1);
     if (nErr < 0) {
-        ID4_UNLOCK;
+        ID4_UNLOCK();
         return;
     }
 
     nErr = ReadSerPort(fPort, sHistory, 466, sCmd);
     if (nErr < 0) {
-        ID4_UNLOCK;
+        ID4_UNLOCK();
         return;
     }
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     for (n = 0; n < 31; n++)
     {
@@ -409,36 +430,36 @@ void ShowHistory(int fPort)
     return;
 }
 
-int ReadVersion(int fPort, unsigned char *sVersion)
+int ReadVersion(unsigned char *sVersion)
 {
     int nRet;
     unsigned char sCmd;
 
-    ID4_LOCK;
+    ID4_LOCK();
 
     sCmd = 'v';
     nRet = WriteSerPort(fPort, &sCmd, 1);
     if (nRet < 0) {
-        ID4_UNLOCK;
+        ID4_UNLOCK();
         return -1;
     }
 
     nRet = ReadSerPort(fPort, sVersion, 4, sCmd);
     if (nRet < 0) {
-        ID4_UNLOCK;
+        ID4_UNLOCK();
         return -1;
     }
 
-    ID4_UNLOCK;
+    ID4_UNLOCK();
 
     return 0;
 }
 
-void ShowVersion(int fPort)
+void ShowVersion(void)
 {
     unsigned char sVersion[4];
 
-    if (ReadVersion(fPort, sVersion))
+    if (ReadVersion(sVersion))
         return;
 
     printf("Version = %c%d.%d-%d\n", sVersion[0], sVersion[1], sVersion[2], sVersion[3]);
@@ -448,5 +469,29 @@ void ShowVersion(int fPort)
         DumpResponseToFile(fLog, 'v', sVersion, sizeof(sVersion));
 #endif
 
+    return;
+}
+
+// Serialize access to port
+void ID4_Reserve(void)
+{
+    pthread_mutex_lock(&id4_mutex);
+
+    fPort = OpenSerPort(sPortName, bNonBlock);
+	if (fPort < 0)
+	{
+        printf("Serial port open error: %d, %s\n", errno, strerror(errno));
+        pthread_mutex_unlock(&id4_mutex);
+    }
+
+    return;
+}
+
+void ID4_Release(void)
+{
+    CloseSerPort(fPort);
+    fPort = -1;
+
+    pthread_mutex_unlock(&id4_mutex);
     return;
 }
