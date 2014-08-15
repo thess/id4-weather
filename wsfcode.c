@@ -34,7 +34,8 @@ wi_cvariables(wi_sess * sess, int token)
 		if (sWBuf)
 		{
 			if (ReadWeather(sWBuf) == 0)
-			{		// Convert presure
+			{
+				// Convert presure
 				nPres1 = (sWBuf[11] + 2900) / 100;
 				nPres2 = (sWBuf[11] + 2900) - (nPres1 * 100);
 
@@ -43,14 +44,18 @@ wi_cvariables(wi_sess * sess, int token)
 				nWinDir |= (sWBuf[1] & 0x80) >> 4;
 
 				wi_printf(sess, "Indoor: %d, Outdoor: %d, Wind direction: %s, Speed: %d, Pressure: %d.%02d",
-								sWBuf[9] - 40, sWBuf[10] - 40,
-								sWinDir[nWinDir], (sWBuf[8] * 99) / 256,
-								nPres1, nPres2);
-			} else {
+						  sWBuf[9] - 40, sWBuf[10] - 40,
+						  sWinDir[nWinDir], (sWBuf[8] * 99) / 256,
+						  nPres1, nPres2);
+			}
+			else
+			{
 				wi_printf(sess, "-- No weather available --");
 			}
 			free(sWBuf);
-		} else {
+		}
+		else
+		{
 			wi_printf(sess, "-- Out of memory --");
 		}
 		break;

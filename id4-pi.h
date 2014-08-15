@@ -5,8 +5,8 @@
 //
 // Project include
 
-#define VERSION_MAJOR   0
-#define VERSION_MINOR   8
+#define VERSION_MAJOR   1
+#define VERSION_MINOR   0
 
 // boolean constants
 #ifndef TRUE
@@ -33,5 +33,8 @@ extern pthread_mutex_t  id4_mutex;
 extern int fPort;
 extern int bNonBlock;
 extern char sPortName[];
+
+extern int bLogWeather;
+extern int bWebEnable;
 
 #endif // ID4_PI_H_INCLUDED
