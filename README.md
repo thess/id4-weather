@@ -1,10 +1,10 @@
 ###id4-weather
 
 Serial interface for Heath ID4001-5. Includes builtin web service.
-
+```
 $ make release  
 $ sudo cp ./bin/Release/id4-pi /usr/local/bin
-```
+
 $ id4-pi -h
 id4-pi Control and reporting for Heath ID4001 V1.0
 
