@@ -10,18 +10,19 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <string.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <time.h>
+#include <sys/time.h>
 
 #define socketclose(s) close(s)
-
-typedef unsigned long u_long;
 
 void * memset( void *, int chr, size_t length);
 
