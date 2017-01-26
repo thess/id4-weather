@@ -32,6 +32,9 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([clock_gettime localtime_r memset mkdir select socket strchr strerror strrchr strstr])
 
+ID4001_FLAGS="-Wno-multichar -DLINUX -DGNU_SOURCE"
+AC_SUBST(ID4001_FLAGS)
+
 AC_CONFIG_FILES([Makefile
                  webio/Makefile])
 AC_OUTPUT
