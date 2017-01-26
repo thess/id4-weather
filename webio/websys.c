@@ -55,7 +55,7 @@ WI_NOBLOCKSOCK(long sock)
 static char datebuf[36];
 
 extern char *sDayOfWeek[];
-extern char *sMonTab[];
+extern char *sMonName[];
 extern struct tm tmLocalTime;
 
 char *
@@ -78,7 +78,7 @@ wi_getdate(wi_sess * sess, struct tm *tmtime)
    sprintf(datebuf, "%s, %u %s %u %02u:%02u:%02u",
       sDayOfWeek[tmtime->tm_wday],
       tmtime->tm_mday,
-      sMonTab[tmtime->tm_mon],
+      sMonName[tmtime->tm_mon],
       tmtime->tm_year + 1900, /* Windows year is based on 1900 */
       tmtime->tm_hour,
       tmtime->tm_min,

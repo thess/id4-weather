@@ -6,7 +6,7 @@
 // Project include
 
 #define VERSION_MAJOR   1
-#define VERSION_MINOR   0
+#define VERSION_MINOR   1
 
 // boolean constants
 #ifndef TRUE
@@ -22,7 +22,7 @@ extern int          iTZOffset;
 short               sMinutesPastMidnite;
 
 extern const char * const sDayOfWeek[];
-extern const char * const sMonTab[];
+extern const char * const sMonName[];
 extern const char * const sAmPmBuff[];
 extern const char * const sWinDir[];
 

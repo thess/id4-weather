@@ -137,7 +137,7 @@ void *xID4Clock(void *args)
 #if defined(DEBUG)
 			printf("%% Time sync: %s %2d %s %d, ", sDayOfWeek[tmLocalTime.tm_wday],
 				   tmLocalTime.tm_mday,
-				   sMonTab[tmLocalTime.tm_mon],
+				   sMonName[tmLocalTime.tm_mon],
 				   tmLocalTime.tm_year + 1900);
 			printf("%02d:%02d:%02d\n", tmLocalTime.tm_hour, tmLocalTime.tm_min, tmLocalTime.tm_sec);
 #endif
@@ -238,7 +238,7 @@ int NewLog(int xTime)
 	int		nRet = FALSE;
 
 	// Create path name from date (/mmmyy)
-	nOut = sprintf(sLogPath, LOCAL_LOG_PATH "/%s%02d", sMonTab[tmLocalTime.tm_mon], tmLocalTime.tm_year - 100);
+	nOut = sprintf(sLogPath, LOCAL_LOG_PATH "/%s%02d", sMonName[tmLocalTime.tm_mon], tmLocalTime.tm_year - 100);
 	if (stat(sLogPath, &xInfo))
 	{
 		if ((errno == ENOTDIR) || (errno == ENOENT))

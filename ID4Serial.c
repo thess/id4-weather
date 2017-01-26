@@ -27,7 +27,16 @@ const char *sAmPm(unsigned char nHour)
 {
 	return sAmPmBuff[((nHour & 0x80) >> 7) & 1];
 }
+//
+// Month name function (bounds check)
+//
+const char *sMonTab(unsigned char nMon)
+{
+    if (nMon > 11)
+        return "Ovfl";
 
+    return sMonName[nMon];
+}
 #if defined(RECORD_MODE)
 static void DumpResponseToFile(FILE *fLog, char cmd, unsigned char *sBuf, int nSize)
 {
@@ -75,7 +84,7 @@ int SetDateTime(unsigned char sClkMode)
 {
 	int rc = 0;
 	int nRet;
-	int nHour;
+	unsigned char nHour;
 	unsigned char bAmPm;
 	unsigned char sCmdBuf[4];
 	time_t ltime;
@@ -92,7 +101,6 @@ int SetDateTime(unsigned char sClkMode)
 			break;
 
 		sleep(1);
-#endif
 
 		// -------- Clear Clock ----------------
 		memset(sCmdBuf, 0, sizeof(sCmdBuf));
@@ -138,6 +146,7 @@ int SetDateTime(unsigned char sClkMode)
 		// Wait 100ms between commands
 		usleep(100 * 1000);
 
+#endif
 		// -------- Set Clock ----------------
 
 		// Get current system date/time
@@ -341,7 +350,7 @@ void ShowDateTime(char *sPrefix, unsigned char *sTimeBuf)
 	printf("%s%2d:%02d:%02d %s", sPrefix, sTimeBuf[3] & 0x7F, sTimeBuf[2], sTimeBuf[1], sAmPm(sTimeBuf[3]));
 
 	// Have date in form <dd><mm><yy - 2000>
-	printf("  %d-%s-%d\n", sTimeBuf[5], sMonTab[sTimeBuf[6] - 1], sTimeBuf[7] + 2000);
+	printf("  %d-%s-%d\n", sTimeBuf[5], sMonTab(sTimeBuf[6] - 1), sTimeBuf[7] + 2000);
 
 	return;
 }
@@ -363,7 +372,7 @@ void ShowWeather(char *sPrefix, unsigned char *sWeatherBuf)
 
 	printf("%s%2d:%02d:%02d %s", sPrefix,
 		   sWeatherBuf[4] & 0x7F, sWeatherBuf[3], sWeatherBuf[2], sAmPm(sWeatherBuf[4]));
-	printf("  %d-%s-%d\n", sWeatherBuf[5], sMonTab[sWeatherBuf[6] - 1], sWeatherBuf[7] + 2000);
+	printf("  %d-%s-%d\n", sWeatherBuf[5], sMonTab(sWeatherBuf[6] - 1), sWeatherBuf[7] + 2000);
 	printf("Wind direction: %s, Speed: %d, Indoor: %d, Outdoor: %d, Pressure: %d.%02d\n",
 		   sWinDir[nWinDir], (sWeatherBuf[8] * 99) / 256, sWeatherBuf[9] - 40, sWeatherBuf[10] - 40, nPres1, nPres2);
 
@@ -404,13 +413,13 @@ void ShowMinMax(void)
 		return;
 	}
 
-	printf("Tlow = %d on %d-%s %d:%02d %s,", sMinMax1[1] - 40, sMinMax1[4], sMonTab[sMinMax1[5] - 1],
+	printf("Tlow = %d on %d-%s %d:%02d %s,", sMinMax1[1] - 40, sMinMax1[4], sMonTab(sMinMax1[5] - 1),
 		   sMinMax1[3] & 0x7F, sMinMax1[2], sAmPm(sMinMax1[3]));
 
-	printf("  Thigh = %d on %d-%s %d:%02d %s\n", sMinMax1[6] - 40, sMinMax1[9], sMonTab[sMinMax1[10] - 1],
+	printf("  Thigh = %d on %d-%s %d:%02d %s\n", sMinMax1[6] - 40, sMinMax1[9], sMonTab(sMinMax1[10] - 1),
 		   sMinMax1[8] & 0x7F, sMinMax1[7], sAmPm(sMinMax1[8]));
 	;
-	printf("Wspeed = %d on %d-%s %d:%02d %s\n", (sMinMax1[11] * 99) / 256, sMinMax1[14], sMonTab[sMinMax1[15] - 1],
+	printf("Wspeed = %d on %d-%s %d:%02d %s\n", (sMinMax1[11] * 99) / 256, sMinMax1[14], sMonTab(sMinMax1[15] - 1),
 		   sMinMax1[13] & 0x7F, sMinMax1[12], sAmPm(sMinMax1[13]));
 
 
@@ -423,13 +432,13 @@ void ShowMinMax(void)
 		return;
 	}
 
-	printf("Plow = %d.%02d on %d-%s %d:%02d %s,  ", nPres1, nPres2, sMinMax2[4], sMonTab[sMinMax2[5] - 1],
+	printf("Plow = %d.%02d on %d-%s %d:%02d %s,  ", nPres1, nPres2, sMinMax2[4], sMonTab(sMinMax2[5] - 1),
 		   sMinMax2[3] & 0x7F, sMinMax2[2], sAmPm(sMinMax2[3]));
 
 	nPres1 = (sMinMax2[6] + 2900) / 100;
 	nPres2 = (sMinMax2[6] + 2900) - (nPres1 * 100);
 
-	printf("Phigh = %d.%02d on %d-%s %d:%02d %s\n", nPres1, nPres2, sMinMax2[9], sMonTab[sMinMax2[10] - 1],
+	printf("Phigh = %d.%02d on %d-%s %d:%02d %s\n", nPres1, nPres2, sMinMax2[9], sMonTab(sMinMax2[10] - 1),
 		   sMinMax2[8] & 0x7F, sMinMax2[7], sAmPm(sMinMax2[8]));
 
 	return;
