@@ -29,13 +29,13 @@
 #include "ID4Serial.h"
 
 const char * const sMonName[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-								   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-								 };
+				    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+				  };
 
 // Wind direction - gray coded
 const char * const sWinDir[16] = { "N", "NNW", "WNW", "NW", "SSW", "SW", "W", "WSW",
-								   "NNE", "NE", "E", "ENE", "S", "SSE", "ESE", "SE"
-								 };
+				   "NNE", "NE", "E", "ENE", "S", "SSE", "ESE", "SE"
+				 };
 
 // AM / PM strings
 const char * const sAmPmBuff[2] = { "AM", "PM" };
@@ -43,7 +43,7 @@ const char * const sAmPmBuff[2] = { "AM", "PM" };
 // Day of week map
 const char * const sDayOfWeek[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
-const unsigned char sFirmware[4] = {'v', 5, 6, 28};
+const unsigned char sFirmware[4] = { 'v', 5, 6, 28 };
 
 // TOD clock
 struct tm       tmLocalTime;
@@ -221,7 +221,7 @@ void parse_options(int argc, char **argv)
 	int opt;
 
 	optind = 0;
-	while ((opt = getopt(argc, argv, "?Bhs:CTWVMHnrZD")) != -1)
+	while ((opt = getopt(argc, argv, "?Bhs:CTWVMHnrRZD")) != -1)
 	{
 		switch (opt)
 		{
@@ -255,9 +255,9 @@ void parse_options(int argc, char **argv)
 			break;
 #endif // defined
 
-        case 'R':
-            bWebOnly = TRUE;
-            bWebEnable = TRUE;
+		case 'R':
+			bWebOnly = TRUE;
+			bWebEnable = TRUE;
 		case 'Z':
 			bLogWeather = FALSE;
 			break;
@@ -423,22 +423,22 @@ int main(int argc, char **argv)
 	// Remove (left-over) queue
 	mq_unlink(MQ_NAME);
 
-    if (!bWebOnly)
-    {
-        // initialize the queue attributes
-        mqAttr.mq_flags = 0;
-        mqAttr.mq_maxmsg = ID4_QUEUE_SIZE;
-        mqAttr.mq_msgsize = sizeof(ID4CMD_SIZE);
-        mqAttr.mq_curmsgs = 0;
+	if (!bWebOnly)
+	{
+		// initialize the queue attributes
+		mqAttr.mq_flags = 0;
+		mqAttr.mq_maxmsg = ID4_QUEUE_SIZE;
+		mqAttr.mq_msgsize = sizeof(ID4CMD_SIZE);
+		mqAttr.mq_curmsgs = 0;
 
-        // create the message queue
-        id4_mq = mq_open(MQ_NAME, O_CREAT | O_RDWR, 0666, &mqAttr);
-        if (id4_mq < 0)
-        {
-            printf("mq_open error %d %s\n", errno, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
+		// create the message queue
+		id4_mq = mq_open(MQ_NAME, O_CREAT | O_RDWR, 0666, &mqAttr);
+		if (id4_mq < 0)
+		{
+			printf("mq_open error %d %s\n", errno, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	if (bWebEnable)
 	{
@@ -450,62 +450,61 @@ int main(int argc, char **argv)
 		}
 	}
 
-    if (!bWebOnly)
-    {
-        // Thread to process timer messages
-        if (pthread_create(&tID4Clock, NULL, &xID4Clock, (void *)&id4_mq))
-        {
-            printf("ID4Func thread create failure: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+	if (!bWebOnly)
+	{
+		// Thread to process timer messages
+		if (pthread_create(&tID4Clock, NULL, &xID4Clock, (void *)&id4_mq))
+		{
+			printf("ID4Func thread create failure: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 
-        // Startup -- sync clock to system time
-        xCmd.cmd = ID4_TIME_SET;
-        xCmd.time = 0;
-        if (mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0))
-        {
-            printf("mq_send failure: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+		// Startup -- sync clock to system time
+		xCmd.cmd = ID4_TIME_SET;
+		xCmd.time = 0;
+		if (mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0))
+		{
+			printf("mq_send failure: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 
+		// Setup timer signal hander
+		sa.sa_flags = SA_SIGINFO | SA_RESTART;
+		sa.sa_sigaction = do_timer_proc;
+		sigemptyset(&sa.sa_mask);
 
-        // Setup timer signal hander
-        sa.sa_flags = SA_SIGINFO | SA_RESTART;
-        sa.sa_sigaction = do_timer_proc;
-        sigemptyset(&sa.sa_mask);
+		if (sigaction(ID4SIG, &sa, NULL))
+		{
+			printf("Signal action bind failure: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 
-        if (sigaction(ID4SIG, &sa, NULL))
-        {
-            printf("Signal action bind failure: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+		// Define signal event for timer
+		sev.sigev_notify = SIGEV_SIGNAL;
+		sev.sigev_signo = ID4SIG;
+		sev.sigev_value.sival_ptr = &id4timerid;
+		// Create timer
+		if (timer_create(CLOCK_REALTIME, &sev, &id4timerid))
+		{
+			printf("Timer create failure: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 
-        // Define signal event for timer
-        sev.sigev_notify = SIGEV_SIGNAL;
-        sev.sigev_signo = ID4SIG;
-        sev.sigev_value.sival_ptr = &id4timerid;
-        // Create timer
-        if (timer_create(CLOCK_REALTIME, &sev, &id4timerid))
-        {
-            printf("Timer create failure: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+		// Declare timer (1M ticks)
+		ttLocalTime = time(NULL);
+		localtime_r(&ttLocalTime, &tmLocalTime);
 
-        // Declare timer (1M ticks)
-        ttLocalTime = time(NULL);
-        localtime_r(&ttLocalTime, &tmLocalTime);
-
-        its.it_value.tv_sec = 60 - tmLocalTime.tm_sec;
-        its.it_value.tv_nsec = 0;
-        its.it_interval.tv_sec = 60;
-        its.it_interval.tv_nsec = 0;
-        // Start timer
-        if (timer_settime(id4timerid, 0, &its, NULL))
-        {
-            printf("Timer start failure: %s\n", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
+		its.it_value.tv_sec = 60 - tmLocalTime.tm_sec;
+		its.it_value.tv_nsec = 0;
+		its.it_interval.tv_sec = 60;
+		its.it_interval.tv_nsec = 0;
+		// Start timer
+		if (timer_settime(id4timerid, 0, &its, NULL))
+		{
+			printf("Timer start failure: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	if (bWebEnable)
 	{
@@ -513,15 +512,15 @@ int main(int argc, char **argv)
 		pthread_join(tWebIO, NULL);
 	}
 
-    if (!bWebOnly)
-    {
-        // Cleanup timers, threads & queues
-        timer_delete(id4timerid);
-        pthread_cancel(tID4Clock);
-        pthread_join(tID4Clock, NULL);
+	if (!bWebOnly)
+	{
+		// Cleanup timers, threads & queues
+		timer_delete(id4timerid);
+		pthread_cancel(tID4Clock);
+		pthread_join(tID4Clock, NULL);
 
-        mq_unlink(MQ_NAME);
-    }
+		mq_unlink(MQ_NAME);
+	}
 
 	CloseSerPort(fPort);
 
