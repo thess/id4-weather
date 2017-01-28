@@ -83,8 +83,10 @@ void *xID4Clock(void *args)
 	xCmd.time = (time_t)msg.data;
 	xCmd.cmd = (unsigned char)msg.msgtype;
 
+#if defined(DEBUG)
         // Service request
         printf("->ID4 command: %d at %d\n", xCmd.cmd, xCmd.time);
+#endif
 
         // Process item
         switch(xCmd.cmd)
