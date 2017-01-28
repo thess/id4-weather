@@ -13,8 +13,8 @@ AC_PROG_RANLIB
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create],,
         [AC_MSG_ERROR([POSIX thread support required],1)])
-AC_CHECK_LIB([rt], [mq_open],,
-        [AC_MSG_ERROR([librt required],1)])
+AC_CHECK_LIB([rt], [timer_create],,
+        [AC_MSG_ERROR([librt support required],1)])
 AC_CHECK_LIB([curl], [curl_easy_init],,
         [AC_MSG_ERROR([libcurl required],1)])
 

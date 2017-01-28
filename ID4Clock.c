@@ -23,10 +23,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include <mqueue.h>
 
 #include "id4-pi.h"
 #include "ID4Serial.h"
+#include "threadqueue.h"
 
 extern int ftpUpload(char *srcFile, char *dstFile);
 
@@ -53,7 +53,8 @@ static char sTargetName[16];
 
 void *xID4Clock(void *args)
 {
-    mqd_t id4_mq = *(mqd_t *)args;
+    struct threadqueue *id4_mq = (struct threadqueue *)args;
+    struct threadmsg msg;
     int iSaveDST = 0;
     ID4Cmd  xCmd;
     char *xBuf;
@@ -73,11 +74,14 @@ void *xID4Clock(void *args)
 
     while (TRUE)
     {
-        if (mq_receive(id4_mq, (char *)&xCmd, ID4CMD_SIZE, NULL) < 0)
+        if (thread_queue_get(id4_mq, NULL, &msg) != 0)
         {
-            printf("mq_receive returned %d (%s)\n", errno, strerror(errno));
+            printf("thread_queue_get returned %d (%s)\n", errno, strerror(errno));
             break;
         }
+	// Fill in the parts
+	xCmd.time = (time_t)msg.data;
+	xCmd.cmd = (unsigned char)msg.msgtype;
 
         // Service request
         printf("->ID4 command: %d at %d\n", xCmd.cmd, xCmd.time);

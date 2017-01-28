@@ -22,11 +22,11 @@
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
-#include <mqueue.h>
 
 #include "id4-pi.h"
 #include "serport.h"
 #include "ID4Serial.h"
+#include "threadqueue.h"
 
 const char * const sMonName[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -78,7 +78,7 @@ extern void *xID4Clock(void *);
 pthread_mutex_t id4_mutex;
 
 // Timer message queue
-mqd_t id4_mq;
+struct threadqueue id4_mq;
 
 #define MQ_NAME	"/ID4_MQ"
 
@@ -94,7 +94,7 @@ int bRecording;
 static void do_timer_proc(int sig, siginfo_t *si, void *uc)
 {
     int rc = 0;
-    ID4Cmd xCmd;
+    time_t xCmdTime;
 
     // make sure this is for us
     if (si->si_value.sival_ptr != &id4timerid)
@@ -107,7 +107,7 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
     localtime_r(&ttLocalTime, &tmLocalTime);
     sMinutesPastMidnite = (60 * tmLocalTime.tm_hour) + tmLocalTime.tm_min;
 
-    xCmd.time = sMinutesPastMidnite;
+    xCmdTime = sMinutesPastMidnite;
 
     // Once per hour processing
     if (tmLocalTime.tm_min == 0)
@@ -116,14 +116,12 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
         if (tmLocalTime.tm_hour == 0)
         {
             // Log and clear min-max, sync time
-            xCmd.cmd = ID4_LOG_MIDNITE;
-            rc = mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0);
+            rc = thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_LOG_MIDNITE);
         }
         else
         {
             // Send log current weather
-            xCmd.cmd = ID4_LOG_WEATHER;
-            rc = mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0);
+            rc = thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_LOG_WEATHER);
         }
     }
     else
@@ -133,8 +131,7 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
                 (tmLocalTime.tm_min == 40))
         {
             // Send log current weather
-            xCmd.cmd = ID4_LOG_WEATHER;
-            rc = mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0);
+            rc = thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_LOG_WEATHER);
         }
 
     }
@@ -143,13 +140,12 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
     if (tmLocalTime.tm_min == 1)
     {
         // Read and set system time
-        xCmd.cmd = ID4_TIME_SYNC;
-        rc = mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0);
+        rc = thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_TIME_SYNC);
     }
 
     if (rc)
     {
-        printf("Fatal: mq_send failed: %s\n", strerror(errno));
+        printf("Fatal: thread_queue_add failed: %s\n", strerror(errno));
         if (bWebEnable)
             pthread_cancel(tWebIO);
     }
@@ -279,10 +275,8 @@ void parse_options(int argc, char **argv)
 int main(int argc, char **argv)
 {
     int rc;
-    struct mq_attr mqAttr;
     unsigned char sTimeBuf[8];
     unsigned char sWeatherBuf[17];
-    ID4Cmd xCmd;
 
     struct sigaction sa;
     struct sigevent sev;
@@ -413,22 +407,12 @@ int main(int argc, char **argv)
     setvbuf(stdout, NULL, _IONBF, 0);
     setlinebuf(stdout);
 
-    // Remove (left-over) queue
-    mq_unlink(MQ_NAME);
-
     if (!bWebOnly)
     {
-        // initialize the queue attributes
-        mqAttr.mq_flags = 0;
-        mqAttr.mq_maxmsg = ID4_QUEUE_SIZE;
-        mqAttr.mq_msgsize = sizeof(ID4CMD_SIZE);
-        mqAttr.mq_curmsgs = 0;
-
         // create the message queue
-        id4_mq = mq_open(MQ_NAME, O_CREAT | O_RDWR, 0666, &mqAttr);
-        if (id4_mq < 0)
+        if (thread_queue_init(&id4_mq) != 0)
         {
-            printf("mq_open error %d %s\n", errno, strerror(errno));
+            printf("thread_queue_init error %d %s\n", errno, strerror(errno));
             exit(EXIT_FAILURE);
         }
     }
@@ -453,11 +437,9 @@ int main(int argc, char **argv)
         }
 
         // Startup -- sync clock to system time
-        xCmd.cmd = ID4_TIME_SET;
-        xCmd.time = 0;
-        if (mq_send(id4_mq, (char *)&xCmd, ID4CMD_SIZE, 0))
+        if (thread_queue_add(&id4_mq, 0, ID4_TIME_SET))
         {
-            printf("mq_send failure: %s\n", strerror(errno));
+            printf("thread_queue_add failure: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
@@ -512,7 +494,7 @@ int main(int argc, char **argv)
         pthread_cancel(tID4Clock);
         pthread_join(tID4Clock, NULL);
 
-        mq_unlink(MQ_NAME);
+        thread_queue_cleanup(&id4_mq, FALSE);
     }
 
     CloseSerPort(fPort);

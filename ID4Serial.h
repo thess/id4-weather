@@ -34,9 +34,6 @@ typedef struct _ID4CmdItem
     unsigned char   cmd;        // ID4 command request
 } ID4Cmd;
 
-#define ID4CMD_SIZE     sizeof(struct _ID4CmdItem)
-#define ID4_QUEUE_SIZE  10
-
 typedef enum
 {
     ID4_LOG_WEATHER = 1,
