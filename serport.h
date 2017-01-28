@@ -3,7 +3,7 @@
 #ifndef SERPORT_H_INCLUDED
 #define SERPORT_H_INCLUDED
 
-int OpenSerPort (char *sDeviceName, int bNonBlock);
+int OpenSerPort (char *sDeviceName);
 int WriteSerPort(int fd, unsigned char *psOutput, int nCount);
 int ReadSerPort(int fd, unsigned char *psResponse, int iMax, unsigned char cCmd);
 void CloseSerPort(int fd);

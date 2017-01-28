@@ -32,13 +32,13 @@
  */
 typedef struct wi_file_s
 {
-   struct wi_file_s *      wf_next;       /* list link */
-   void *                  wf_fd;         /* lower layer descriptor */
-   struct wi_filesys_s *   wf_routines;   /* routines to use */
-   struct wi_sess_s *      wf_sess;       /* session for this file */
-   char     wf_data[WI_FIOSIZE];    /* data buffer for reading file */
-   int      wf_inbuf;               /* number of bytes in wf_data */
-   int      wf_nextbuf;             /* next byte to process in wf_data */
+    struct wi_file_s *      wf_next;       /* list link */
+    void *                  wf_fd;         /* lower layer descriptor */
+    struct wi_filesys_s *   wf_routines;   /* routines to use */
+    struct wi_sess_s *      wf_sess;       /* session for this file */
+    char     wf_data[WI_FIOSIZE];    /* data buffer for reading file */
+    int      wf_inbuf;               /* number of bytes in wf_data */
+    int      wf_nextbuf;             /* next byte to process in wf_data */
 } wi_file;
 
 extern   wi_file * wi_allfiles;
@@ -47,14 +47,14 @@ extern   wi_file * wi_allfiles;
 
 typedef struct wi_filesys_s
 {
-   WI_FILE *   (*wfs_fopen) (char * name, char * mode);
-   int         (*wfs_fread) (char * buf, unsigned size1, unsigned size2, void * fd);
-   int         (*wfs_fwrite) (char * buf, unsigned size1, unsigned size2, void * fd);
-   int         (*wfs_fclose)(void * fd);
-   int         (*wfs_fremove)(char * name);
-   int         (*wfs_fgetsize) (void * fd);
-   int         (*wfs_fauth) (void * fd, char * name, char * pw);  /* Optional, for authentication */
-   int         (*wfs_push) (void * fd, wi_sess * sess);  /* Optional, server push */
+    WI_FILE *   (*wfs_fopen) (char * name, char * mode);
+    int         (*wfs_fread) (char * buf, unsigned size1, unsigned size2, void * fd);
+    int         (*wfs_fwrite) (char * buf, unsigned size1, unsigned size2, void * fd);
+    int         (*wfs_fclose)(void * fd);
+    int         (*wfs_fremove)(char * name);
+    int         (*wfs_fgetsize) (void * fd);
+    int         (*wfs_fauth) (void * fd, char * name, char * pw);  /* Optional, for authentication */
+    int         (*wfs_push) (void * fd, wi_sess * sess);  /* Optional, server push */
 } wi_filesys;
 
 
@@ -83,12 +83,12 @@ extern   int         wi_movebinary(wi_sess * sess, wi_file * fi);
 
 typedef struct em_file_s  /* embedded file */
 {
-   struct   em_file_s const * em_next; /* emfiles list link */
-   char     em_name[EM_FILENAMELEN];   /* name of file */
-   u_char const * em_data;             /* Actual data, if any */
-   int      em_size;                   /* length of em_data in bytes */
-   void *   em_routine;                /* SSI or CGI routine */
-   int      em_flags;                  /* bitmask of the EMF_ flags */
+    struct   em_file_s const * em_next; /* emfiles list link */
+    char     em_name[EM_FILENAMELEN];   /* name of file */
+    u_char const * em_data;             /* Actual data, if any */
+    int      em_size;                   /* length of em_data in bytes */
+    void *   em_routine;                /* SSI or CGI routine */
+    int      em_flags;                  /* bitmask of the EMF_ flags */
 } em_file;
 
 extern   em_file const * emfiles;            /* master list of embedded files */
@@ -112,10 +112,10 @@ extern   wi_filesys emfs;
 
 typedef struct em_open_s
 {
-   struct em_open_s * eo_next;
-   em_file const *   eo_emfile;	/* Pointer to actual file */
-   u_long      eo_position;		/* file position pointer */
-   wi_sess *   eo_sess;			/* session (for pass to code) */
+    struct em_open_s * eo_next;
+    em_file const *   eo_emfile;	/* Pointer to actual file */
+    u_long      eo_position;		/* file position pointer */
+    wi_sess *   eo_sess;			/* session (for pass to code) */
 } EOFILE;
 
 extern   EOFILE * em_openlist;

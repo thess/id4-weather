@@ -38,13 +38,13 @@
 int
 WI_NOBLOCKSOCK(long sock)
 {
-   int   err;
-   int   option = TRUE;
+    int   err;
+    int   option = TRUE;
 
-   setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *)&option, sizeof(option));
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *)&option, sizeof(option));
 
-   err = ioctlsocket((int)sock, FIONBIO, (u_long *)&option);
-   return(err);
+    err = ioctlsocket((int)sock, FIONBIO, (u_long *)&option);
+    return(err);
 }
 #endif
 
@@ -61,30 +61,32 @@ extern struct tm tmLocalTime;
 char *
 wi_getdate(wi_sess * sess, struct tm *tmtime)
 {
-   time_t	timeval;
+    time_t	timeval;
 
-   USE_ARG(sess);
+    USE_ARG(sess);
 
-   timeval = time(NULL);
-   if (tmtime == &tmLocalTime)
-   {
-	   // Get local time
-	   tmLocalTime = *(localtime(&timeval));
-   } else {
-	   // GMT time
-	   tmtime = gmtime(&timeval);
-   }
+    timeval = time(NULL);
+    if (tmtime == &tmLocalTime)
+    {
+        // Get local time
+        tmLocalTime = *(localtime(&timeval));
+    }
+    else
+    {
+        // GMT time
+        tmtime = gmtime(&timeval);
+    }
 
-   sprintf(datebuf, "%s, %u %s %u %02u:%02u:%02u",
-      sDayOfWeek[tmtime->tm_wday],
-      tmtime->tm_mday,
-      sMonName[tmtime->tm_mon],
-      tmtime->tm_year + 1900, /* Windows year is based on 1900 */
-      tmtime->tm_hour,
-      tmtime->tm_min,
-      tmtime->tm_sec);
+    sprintf(datebuf, "%s, %u %s %u %02u:%02u:%02u",
+            sDayOfWeek[tmtime->tm_wday],
+            tmtime->tm_mday,
+            sMonName[tmtime->tm_mon],
+            tmtime->tm_year + 1900, /* Windows year is based on 1900 */
+            tmtime->tm_hour,
+            tmtime->tm_min,
+            tmtime->tm_sec);
 
-   return datebuf;
+    return datebuf;
 }
 
 #endif
@@ -93,12 +95,12 @@ wi_getdate(wi_sess * sess, struct tm *tmtime)
 
 portSHORT ks10GetTODClock(void)
 {
-	time_t	timenow;
+    time_t	timenow;
 
-	timenow = time(NULL);
-	tmLocalTime = *(localtime(&timenow));
+    timenow = time(NULL);
+    tmLocalTime = *(localtime(&timenow));
 
-	return (60 * tmLocalTime.tm_hour) + tmLocalTime.tm_min;
+    return (60 * tmLocalTime.tm_hour) + tmLocalTime.tm_min;
 }
 
 #endif /* WIN32 */
@@ -109,7 +111,8 @@ u_long GetTickCount(void)
 {
     struct timespec ts;
 
-    if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+    if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+    {
         return 0;   //error
     }
 
@@ -128,47 +131,49 @@ extern portCHAR *xShellGetTime(struct tm * tmtime);
 char *
 wi_getdate(wi_sess * sess, struct tm * tmtime)
 {
-	portUNUSED_ARG(sess);
+    portUNUSED_ARG(sess);
 
-	return xShellGetTime(tmtime);
+    return xShellGetTime(tmtime);
 }
 
 int stricmp(const char *s1, const char *s2)
 {
-  unsigned char c1, c2;
+    unsigned char c1, c2;
 
-  if (s1 == s2)
-    return 0;
+    if (s1 == s2)
+        return 0;
 
-  do
-  {
-      c1 = tolower (*s1++);
-      c2 = tolower (*s2++);
+    do
+    {
+        c1 = tolower (*s1++);
+        c2 = tolower (*s2++);
 
-      if (c1 == '\0')
-			break;
-  } while (c1 == c2);
+        if (c1 == '\0')
+            break;
+    }
+    while (c1 == c2);
 
-  return c1 - c2;
+    return c1 - c2;
 }
 
 int strnicmp (const char *s1, const char *s2, size_t n)
 {
-	unsigned char c1, c2;
+    unsigned char c1, c2;
 
-	if (s1 == s2 || n == 0)
-		return 0;
+    if (s1 == s2 || n == 0)
+        return 0;
 
-	do
-	{
-	  c1 = tolower(*s1++);
-	  c2 = tolower(*s2++);
+    do
+    {
+        c1 = tolower(*s1++);
+        c2 = tolower(*s2++);
 
-	  if ((--n == 0) || (c1 == '\0'))
-		break;
-	} while (c1 == c2);
+        if ((--n == 0) || (c1 == '\0'))
+            break;
+    }
+    while (c1 == c2);
 
-	return c1 - c2;
+    return c1 - c2;
 }
 
 //

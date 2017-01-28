@@ -6,7 +6,7 @@
 // Project include
 
 #define VERSION_MAJOR   1
-#define VERSION_MINOR   1
+#define VERSION_MINOR   2
 
 // boolean constants
 #ifndef TRUE
@@ -31,7 +31,6 @@ extern struct tm tmLocalTime;
 extern pthread_mutex_t  id4_mutex;
 
 extern int fPort;
-extern int bNonBlock;
 extern char sPortName[];
 
 extern int bLogWeather;

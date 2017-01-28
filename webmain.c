@@ -39,37 +39,37 @@ int   wfs_auth(void *fd, char *name, char *password);
 
 void *xWebStart(void *args)
 {
-	int error;
+    int error;
 
-	dprintf("Webio server starting...\n");
+    dprintf("Webio server starting...\n");
 
 thread_restart:
-	error = wi_init();
-	if(error < 0)
-	{
-		dprintf("wi_init error %d\n", error);
-		return NULL;
-	}
+    error = wi_init();
+    if(error < 0)
+    {
+        dprintf("wi_init error %d\n", error);
+        return NULL;
+    }
 
-	/* Install our port-local authentication routine */
-	emfs.wfs_fauth = wfs_auth;
+    /* Install our port-local authentication routine */
+    emfs.wfs_fauth = wfs_auth;
 
-	error = wi_thread();   /* blocks here until killed */
-	if(error < 0)
-	{
-		// Check for restart needed
-		if (error == WIE_RESTART)
-		{
-			dprintf("Webio server restarting\n");
-			goto thread_restart;
-		}
+    error = wi_thread();   /* blocks here until killed */
+    if(error < 0)
+    {
+        // Check for restart needed
+        if (error == WIE_RESTART)
+        {
+            dprintf("Webio server restarting\n");
+            goto thread_restart;
+        }
 
-		dprintf("wi_thread returned error %d\n", error);
-	}
+        dprintf("wi_thread returned error %d\n", error);
+    }
 
-	dprintf("...Webio exit(%d)\n", error);
+    dprintf("...Webio exit(%d)\n", error);
 
-	return NULL;
+    return NULL;
 }
 
 /* Return true if user gets access to the embedded file, 0 if not. */
@@ -77,37 +77,37 @@ thread_restart:
 int wfs_auth(void *fd, char *name, char *password)
 {
 
-	/* See if this file requires authentication. */
-	EOFILE *eofile;
-	em_file const *emf;
+    /* See if this file requires authentication. */
+    EOFILE *eofile;
+    em_file const *emf;
 
-	eofile = (EOFILE *)fd;
-	emf = eofile->eo_emfile;
+    eofile = (EOFILE *)fd;
+    emf = eofile->eo_emfile;
 
-	if(emf->em_flags & EMF_AUTH)
-	{
-		if(strcmp(name, test_name) != 0)
-			return 0;
-		if(strcmp(password, test_passwd) != 0)
-			return 0;
-	}
-	return 1;
+    if(emf->em_flags & EMF_AUTH)
+    {
+        if(strcmp(name, test_name) != 0)
+            return 0;
+        if(strcmp(password, test_passwd) != 0)
+            return 0;
+    }
+    return 1;
 }
 
 
 void
 ws_dtrap(void)
 {
-	printf("dtrap - need breakpoint\n");
+    printf("dtrap - need breakpoint\n");
 }
 
 void
 panic(char * msg)
 {
-	printf("panic: %s\n", msg);
-	dtrap();
+    printf("panic: %s\n", msg);
+    dtrap();
 pstop:
-	goto pstop;
+    goto pstop;
 }
 
 #if 0
@@ -126,14 +126,14 @@ extern u_long   wi_totalblocks;
 int
 status_ssi(wi_sess * sess, EOFILE * eofile)
 {
-	portUNUSED_ARG(eofile);
+    portUNUSED_ARG(eofile);
 
-	/* print memory stats to the session's TX buffers */
-	wi_printf(sess, "Current blocks: %d <br>", wi_blocks );
-	wi_printf(sess, "Current bytes: %d <br>", wi_bytes );
-	wi_printf(sess, "Total blocks: %d <br>", wi_totalblocks );
-	wi_printf(sess, "Max. bytes: %d <br>", wi_maxbytes );
+    /* print memory stats to the session's TX buffers */
+    wi_printf(sess, "Current blocks: %d <br>", wi_blocks );
+    wi_printf(sess, "Current bytes: %d <br>", wi_bytes );
+    wi_printf(sess, "Total blocks: %d <br>", wi_totalblocks );
+    wi_printf(sess, "Max. bytes: %d <br>", wi_maxbytes );
 
-	return 0;      /* OK return code */
+    return 0;      /* OK return code */
 }
 #endif

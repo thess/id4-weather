@@ -32,71 +32,71 @@ int   ssi_threshhold = DDB_SIZE/2;
 void
 wi_printf(wi_sess * sess, char * fmt, ...)
 {
-   u_long   len;
-   va_list a;
+    u_long   len;
+    va_list a;
 
-   /* Since it's a huge pain to check the connection after each CGI write,
-    * we may get sometimes handed a dying connection. Ignore these.
-    */
-   if(sess->ws_state == WI_ENDING)
-      return;
+    /* Since it's a huge pain to check the connection after each CGI write,
+     * we may get sometimes handed a dying connection. Ignore these.
+     */
+    if(sess->ws_state == WI_ENDING)
+        return;
 
-   /* Try to make sure we won't overflow the print buffer */
-   len = strlen(fmt);
-   if(len > sizeof(output)/2 )
-   {
-      dtrap();
-      dprintf("wi_printf: overflow, fmt: %s\n", fmt);
-      return;
-   }
+    /* Try to make sure we won't overflow the print buffer */
+    len = strlen(fmt);
+    if(len > sizeof(output)/2 )
+    {
+        dtrap();
+        dprintf("wi_printf: overflow, fmt: %s\n", fmt);
+        return;
+    }
 
-   va_start(a, fmt);
-   vsprintf(output, fmt, a);
-   va_end(a);
+    va_start(a, fmt);
+    vsprintf(output, fmt, a);
+    va_end(a);
 
-   /* See if we overflowed the print buffer */
-   len = strlen(output);
-   if((output[DDB_SIZE-1] != 0) || len >= sizeof(output))
-   {
-      dprintf("wi_printf: overflow, output: %s\n", output);
-      panic("wi_printf");
-   }
+    /* See if we overflowed the print buffer */
+    len = strlen(output);
+    if((output[DDB_SIZE-1] != 0) || len >= sizeof(output))
+    {
+        dprintf("wi_printf: overflow, output: %s\n", output);
+        panic("wi_printf");
+    }
 
-   /* Print warnings if we even came close. */
-   if(len > sizeof(output)/2 )
-   {
-      dtrap();
-      dprintf("wi_printf warning: oversize line: %s\n", output);
-   }
+    /* Print warnings if we even came close. */
+    if(len > sizeof(output)/2 )
+    {
+        dtrap();
+        dprintf("wi_printf warning: oversize line: %s\n", output);
+    }
 
-   /* see if new data will fit in existing buffer */
-   if((sess->ws_txtail == NULL) ||
-      (len >= (unsigned)(WI_TXBUFSIZE - sess->ws_txtail->tb_total)))
-   {
-      /* won't fit, get another buffer */
-      if(wi_txalloc(sess) == NULL)
-         return;
-   }
+    /* see if new data will fit in existing buffer */
+    if((sess->ws_txtail == NULL) ||
+            (len >= (unsigned)(WI_TXBUFSIZE - sess->ws_txtail->tb_total)))
+    {
+        /* won't fit, get another buffer */
+        if(wi_txalloc(sess) == NULL)
+            return;
+    }
 
-   MEMCPY( &sess->ws_txtail->tb_data[sess->ws_txtail->tb_total],
-      output, len);
-   sess->ws_txtail->tb_total += len;
-   return;
+    MEMCPY( &sess->ws_txtail->tb_data[sess->ws_txtail->tb_total],
+            output, len);
+    sess->ws_txtail->tb_total += len;
+    return;
 }
 
 
 int
 wi_putlong(wi_sess * sess, u_long value)
 {
-   wi_printf(sess, "%lu", value);
-   return 0;
+    wi_printf(sess, "%lu", value);
+    return 0;
 }
 
 int
 wi_putstring(wi_sess * sess, char * string)
 {
-   wi_printf(sess, "%s", string);
-   return 0;
+    wi_printf(sess, "%s", string);
+    return 0;
 }
 
 /* wi_formvalue() - get a value from a form. form should be in the
@@ -110,22 +110,22 @@ wi_putstring(wi_sess * sess, char * string)
 char *
 wi_formvalue( wi_sess * sess, char * ctlname )
 {
-   int      i;
-   struct wi_form_s * form;
+    int      i;
+    struct wi_form_s * form;
 
-   for(form = sess->ws_formlist; form; form = form->next)
-   {
-      for(i = 0; i < form->paircount; i++)
-         if( stricmp(form->pairs[i].name, ctlname) == 0 )
-         {
-            if( (*form->pairs[i].value) == 0)
-               return NULL;
-            else
-               return form->pairs[i].value;
-         }
-   }
+    for(form = sess->ws_formlist; form; form = form->next)
+    {
+        for(i = 0; i < form->paircount; i++)
+            if( stricmp(form->pairs[i].name, ctlname) == 0 )
+            {
+                if( (*form->pairs[i].value) == 0)
+                    return NULL;
+                else
+                    return form->pairs[i].value;
+            }
+    }
 
-   return NULL;
+    return NULL;
 }
 
 
@@ -191,12 +191,12 @@ wi_checkip(u_long * out, char * input)
 char *
 wi_formipaddr( wi_sess * sess, char * ipname, u_long * ipaddr)
 {
-   char * iptext = wi_formvalue(sess, ipname );
+    char * iptext = wi_formvalue(sess, ipname );
 
-   if (!iptext)
-      return "unknown form control name";
+    if (!iptext)
+        return "unknown form control name";
 
-   return (wi_checkip(ipaddr, iptext));
+    return (wi_checkip(ipaddr, iptext));
 }
 
 /* wi_formint()
@@ -210,41 +210,41 @@ wi_formipaddr( wi_sess * sess, char * ipname, u_long * ipaddr)
 int
 wi_formint(wi_sess * sess, char * name, long * return_int )
 {
-   char * valuetext;
+    char * valuetext;
 
-   valuetext = wi_formvalue( sess, name );
-   if(valuetext == NULL)
-      return WIE_BADPARM;
+    valuetext = wi_formvalue( sess, name );
+    if(valuetext == NULL)
+        return WIE_BADPARM;
 
-   *return_int = (long)atol(valuetext);
-   if( (*return_int == 0) && (*valuetext != '0'))
-      return WIE_BADPARM;
-   else
-      return 0;
+    *return_int = (long)atol(valuetext);
+    if( (*return_int == 0) && (*valuetext != '0'))
+        return WIE_BADPARM;
+    else
+        return 0;
 }
 
 
 int
 wi_formbool(wi_sess * sess, char * name)
 {
-   char * valuetext;
+    char * valuetext;
 
-   valuetext = wi_formvalue( sess, name );
-   if(valuetext == NULL)
-   {
-      return 0;   /* Default: FALSE */
-   }
+    valuetext = wi_formvalue( sess, name );
+    if(valuetext == NULL)
+    {
+        return 0;   /* Default: FALSE */
+    }
 
-   if( (((*valuetext) & 0x20) == 'y') ||      /* Yes */
-       (((*valuetext) & 0x20) == 't') ||      /* True */
-         (*valuetext == 'c') )                /* checked */
-   {
-      return 1;
-   }
-   if( stricmp(valuetext, "on") == 0)      /* on */
-      return 1;
+    if( (((*valuetext) & 0x20) == 'y') ||      /* Yes */
+            (((*valuetext) & 0x20) == 't') ||      /* True */
+            (*valuetext == 'c') )                /* checked */
+    {
+        return 1;
+    }
+    if( stricmp(valuetext, "on") == 0)      /* on */
+        return 1;
 
-   return 0;
+    return 0;
 }
 
 

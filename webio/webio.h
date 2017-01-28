@@ -30,23 +30,24 @@ struct wi_sess_s;    /* predecl */
 /* Port number on which to listen. May be changed prior to calling webinit */
 extern   int   httpport;
 
-typedef enum httpcmd {
-   H_INITIAL = 0,
-   H_GET = 0x47455420,
-   H_POST = 0x504F5354,
-   H_PUT = 0x50555420,
-   H_DONE = -1,
+typedef enum httpcmd
+{
+    H_INITIAL = 0,
+    H_GET = 0x47455420,
+    H_POST = 0x504F5354,
+    H_PUT = 0x50555420,
+    H_DONE = -1,
 } httpcmds;
 
 
 /* Data to send is held in a list of txbuf structures */
 typedef struct txbuf_s
 {
-   struct txbuf_s * tb_next;           /* list link */
-   struct   wi_sess_s * tb_session;    /* backpointer to session */
-   int      tb_total;                  /* Size of data in tb_data */
-   int      tb_done;                   /* amount of tb_data already sent */
-   char     tb_data[WI_TXBUFSIZE];     /* Data buffer for this segment */
+    struct txbuf_s * tb_next;           /* list link */
+    struct   wi_sess_s * tb_session;    /* backpointer to session */
+    int      tb_total;                  /* Size of data in tb_data */
+    int      tb_done;                   /* amount of tb_data already sent */
+    char     tb_data[WI_TXBUFSIZE];     /* Data buffer for this segment */
 } txbuf;
 
 
@@ -63,55 +64,56 @@ struct wi_file_s;    /* predecl */
 typedef long   wi_sec;     /* A number of seconds, for timeouts */
 
 /* States of a sesison */
-typedef enum wistates {
-   WI_HEADER,        /* Getting HTTP header form socket */
-   WI_POSTRX,        /* waiting for POST name value pairs */
-   WI_CONTENT,       /* reading file from disk or script */
-   WI_SENDDATA,      /* Sending file/data into socket */
-   WI_BLOCKED,       /* Blocked pending external thread operation */
-   WI_ENDING         /* Sessions done,cleaning up for deletion */
+typedef enum wistates
+{
+    WI_HEADER,        /* Getting HTTP header form socket */
+    WI_POSTRX,        /* waiting for POST name value pairs */
+    WI_CONTENT,       /* reading file from disk or script */
+    WI_SENDDATA,      /* Sending file/data into socket */
+    WI_BLOCKED,       /* Blocked pending external thread operation */
+    WI_ENDING         /* Sessions done,cleaning up for deletion */
 } wistate;
 
 
 typedef struct wi_sess_s
 {
-   struct   wi_sess_s * ws_next;             /* queue link */
-   socktype ws_socket;
-   wistate  ws_state;
+    struct   wi_sess_s * ws_next;             /* queue link */
+    socktype ws_socket;
+    wistate  ws_state;
 
-   char     ws_rxbuf[WI_RXBUFSIZE]; /* input from browser */
-   int      ws_rxsize;              /* size of valid data in rxbuf */
-   int      ws_contentLength;       /* size of current sess data */
-   char *   ws_data;                /* start of contetnt */
+    char     ws_rxbuf[WI_RXBUFSIZE]; /* input from browser */
+    int      ws_rxsize;              /* size of valid data in rxbuf */
+    int      ws_contentLength;       /* size of current sess data */
+    char *   ws_data;                /* start of contetnt */
 
-   txbuf *  ws_txbufs;              /* list of output buffers ready to send */
-   txbuf *  ws_txtail;              /* last entry in ws_txbufs list */
+    txbuf *  ws_txbufs;              /* list of output buffers ready to send */
+    txbuf *  ws_txtail;              /* last entry in ws_txbufs list */
 
-   char *   ws_uri;                 /* URI from request (often inside rxbuf) */
-   char *   ws_referer;             /* Referrer Information */
-   char *   ws_auth;
-   char *   ws_host;
-   struct wi_form_s * ws_formlist;  /* attached forms (once parsed) */
-   struct wi_file_s * ws_filelist;  /* local files associated with session */
+    char *   ws_uri;                 /* URI from request (often inside rxbuf) */
+    char *   ws_referer;             /* Referrer Information */
+    char *   ws_auth;
+    char *   ws_host;
+    struct wi_form_s * ws_formlist;  /* attached forms (once parsed) */
+    struct wi_file_s * ws_filelist;  /* local files associated with session */
 
-   httpcmds ws_cmd;                 /* GET, POST, etc. */
-   int      ws_flags;
-   char *   ws_ftype;               /* Mime type (best guess) */
-   wi_sec   ws_last;                /* timetick of last activity */
+    httpcmds ws_cmd;                 /* GET, POST, etc. */
+    int      ws_flags;
+    char *   ws_ftype;               /* Mime type (best guess) */
+    wi_sec   ws_last;                /* timetick of last activity */
 } wi_sess;
 
 
 typedef struct wi_pair_s
 {
-   char * name;
-   char * value;
+    char * name;
+    char * value;
 } wi_pair;
 
 typedef struct wi_form_s
 {
-   struct wi_form_s * next;
-   int      paircount;
-   wi_pair  pairs[];   /* Size actually will be paircount */
+    struct wi_form_s * next;
+    int      paircount;
+    wi_pair  pairs[];   /* Size actually will be paircount */
 } wi_form;
 
 extern   wi_sess * wi_sessions;

@@ -2,18 +2,15 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT(id4-pi, 1.1, http://www.kitschensync.com/id4-pi)
+AC_INIT(id4-pi, 1.2, http://www.kitschensync.com/id4-pi)
 AM_INIT_AUTOMAKE([1.8 foreign])
 AC_CONFIG_HEADERS([config.h])
 
-#AC_DEFINE(PACKAGE, AC_PACKAGE_NAME, [package name])
-#AC_DEFINE(VERSION, AC_PACKAGE_VERSION, [package version])
-
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_RANLIB
 
 # Checks for libraries.
-AC_PROG_RANLIB
 AC_CHECK_LIB([pthread], [pthread_create],,
         [AC_MSG_ERROR([POSIX thread support required],1)])
 AC_CHECK_LIB([rt], [mq_open],,
@@ -32,8 +29,13 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([clock_gettime localtime_r memset mkdir select socket strchr strerror strrchr strstr])
 
-ID4001_FLAGS="-Wno-multichar -DLINUX -DGNU_SOURCE"
-AC_SUBST(ID4001_FLAGS)
+ID4001_PPFLAGS="-DLINUX -D_GNU_SOURCE"
+ID4001_WFLAGS="-Wno-multichar"
+AC_SUBST(ID4001_PPFLAGS)
+AC_SUBST(ID4001_WFLAGS)
+
+# Silence warning: ar: 'u' modifier ignored since 'D' is the default
+AC_SUBST(ARFLAGS, [cr])
 
 AC_CONFIG_FILES([Makefile
                  webio/Makefile])

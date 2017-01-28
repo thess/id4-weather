@@ -30,18 +30,19 @@ extern void ShowVersion(void);
 //
 typedef struct _ID4CmdItem
 {
-        short           time;       // Trigger time in minutes past midnite
-        unsigned char   cmd;        // ID4 command request
+    short           time;       // Trigger time in minutes past midnite
+    unsigned char   cmd;        // ID4 command request
 } ID4Cmd;
 
 #define ID4CMD_SIZE     sizeof(struct _ID4CmdItem)
 #define ID4_QUEUE_SIZE  10
 
-typedef enum {
-        ID4_LOG_WEATHER = 1,
-        ID4_LOG_MIDNITE,
-        ID4_TIME_SYNC,
-        ID4_TIME_SET
+typedef enum
+{
+    ID4_LOG_WEATHER = 1,
+    ID4_LOG_MIDNITE,
+    ID4_TIME_SYNC,
+    ID4_TIME_SET
 } ID4_CMDFUNC;
 
 #define ID4_LOCK()      ID4_Reserve()
