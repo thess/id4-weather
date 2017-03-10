@@ -62,6 +62,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="serport.h" />
+		<Unit filename="threadqueue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="threadqueue.h" />
 		<Unit filename="webio/linuxdefs.h" />
 		<Unit filename="webio/webclib.c">
 			<Option compilerVar="CC" />

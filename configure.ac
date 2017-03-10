@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT(id4-pi, 1.2, http://www.kitschensync.com/id4-pi)
+AC_INIT(id4-pi, 1.4, http://www.kitschensync.com/id4-pi)
 AM_INIT_AUTOMAKE([1.8 foreign])
 AC_CONFIG_HEADERS([config.h])
 

@@ -80,7 +80,7 @@ int SendSingleCmd(unsigned char sCmd)
 // Set ID4001 to 60hz clock mode,
 // Set current date-time from PC
 //
-int SetDateTime(unsigned char sClkMode)
+int SetDateTime(unsigned char sClkMode, struct tm *timenow)
 {
     int rc = 0;
     int nRet;
@@ -88,7 +88,6 @@ int SetDateTime(unsigned char sClkMode)
     unsigned char bAmPm;
     unsigned char sCmdBuf[4];
     time_t ltime;
-    struct tm *timenow;
 
     ID4_LOCK();
 
@@ -96,9 +95,16 @@ int SetDateTime(unsigned char sClkMode)
     {
         // -------- Set Clock ----------------
 
-        // Get current system date/time
-        ltime = time(NULL);
-        timenow = localtime(&ltime);
+        if (timenow == NULL)
+        {
+            // Get current system date/time
+            ltime = time(NULL);
+            localtime_r(&ltime, &tmLocalTime);
+            timenow = &tmLocalTime;
+        } else {
+            // Update local time if supplied
+            memcpy(&tmLocalTime, timenow, sizeof(struct tm));
+        }
 
         // Use current time
         sCmdBuf[0] = 't';

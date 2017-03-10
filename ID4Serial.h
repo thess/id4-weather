@@ -9,7 +9,7 @@
 
 extern int QueryIdent(int bShow);
 extern int ReadDateTime(unsigned char *sTimeBuf);
-extern int SetDateTime(unsigned char sClkMode);
+extern int SetDateTime(unsigned char sClkMode, struct tm *timenow);
 extern int ReadWeather(unsigned char *sWeatherBuf);
 extern int ReadMinMaxData(unsigned char *sBuf1, unsigned char *sBuf2);
 extern int SendSingleCmd(unsigned char sCmd);

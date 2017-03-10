@@ -5,13 +5,20 @@
 //
 // Project include
 
-#define VERSION_MAJOR   1
-#define VERSION_MINOR   2
+#include "config.h"
 
 // boolean constants
 #ifndef TRUE
 #define TRUE 1
 #define FALSE 0
+#endif
+
+// Remove comment below to force ONION build
+// #define ONION
+
+#if defined(ONION)
+#include <oled-exp.h>
+#define OBUFSIZE	128
 #endif
 
 extern int ReSyncID4(void);
@@ -32,8 +39,14 @@ extern pthread_mutex_t  id4_mutex;
 
 extern int fPort;
 extern char sPortName[];
+extern char *sWLogPath;
 
 extern int bLogWeather;
 extern int bWebEnable;
+
+#if defined(ONION)
+extern int bOnionDpy;
+extern char oledBuf[];
+#endif
 
 #endif // ID4_PI_H_INCLUDED

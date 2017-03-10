@@ -43,13 +43,11 @@ static FILE *hLog;
 static char *sFileBuf;
 static char sLogPath[64];
 static char sTargetName[16];
+static unsigned char sTimeBuf[8];
 
 #define WEATHER_LOG_HEADER1	"Time,Indoor,Outdoor,Wind,Dir,Pressure\n"
 #define WEATHER_LOG_HEADER2	"Midnite,TLow,Time,THigh,Time,Wind,Time,PLow,Time,PHigh,Time\n"
 #define NOWEATHER_LOG_HEADER "*** Log start - Weather data disabled\n"
-
-#define LOCAL_LOG_PATH  "/opt/weather"
-#define LL_PATHSIZE     (sizeof(LOCAL_LOG_PATH) - 1)
 
 void *xID4Clock(void *args)
 {
@@ -79,9 +77,9 @@ void *xID4Clock(void *args)
             printf("thread_queue_get returned %d (%s)\n", errno, strerror(errno));
             break;
         }
-	// Fill in the parts
-	xCmd.time = (time_t)msg.data;
-	xCmd.cmd = (unsigned char)msg.msgtype;
+        // Fill in the parts
+        xCmd.time = (time_t)msg.data;
+        xCmd.cmd = (unsigned char)msg.msgtype;
 
 #if defined(DEBUG)
         // Service request
@@ -101,18 +99,21 @@ void *xID4Clock(void *args)
             {
                 // Log min/max from past 24hrs
                 LogMinMaxData(xCmd.time);
+                // Only if we have path
+                if (sWLogPath)
+                {
+                    // Strip log path prefix
+                    strcpy(sTargetName, &sLogPath[strlen(sWLogPath)]);
+                    // Flatten name, Ex: /May02/12 -> wMay02-12
+                    xBuf = &sTargetName[0];
+                    *xBuf = 'w';
+                    while ((xBuf = strchr(xBuf, '/')))
+                        *xBuf = '-';
 
-                // Strip log path prefix
-                strcpy(sTargetName, &sLogPath[LL_PATHSIZE]);
-                // Flatten name, Ex: /May02/12 -> wMay02-12
-                xBuf = &sTargetName[0];
-                *xBuf = 'w';
-                while ((xBuf = strchr(xBuf, '/')))
-                    *xBuf = '-';
-
-                // Send current log to FTP server
-                printf("MIDNITE: Upload to: %s\n", sTargetName);
-                ftpUpload(sLogPath, sTargetName);
+                    // Send current log to FTP server
+                    printf("MIDNITE: Upload to: %s\n", sTargetName);
+                    ftpUpload(sLogPath, sTargetName);
+                }
             }
 
             // Start new log w/current weather (midnite implied)
@@ -124,7 +125,7 @@ void *xID4Clock(void *args)
 
             // Sync up date/time
             printf("MIDNITE: Clock set\n");
-            if (SetDateTime('6') < 0)
+            if (SetDateTime('6', NULL) < 0)
                 LogMessage(xCmd.time, "--Set clock failed--\n");
 
 
@@ -140,25 +141,49 @@ void *xID4Clock(void *args)
             break;
 
         case ID4_TIME_SYNC:
-#if defined(DEBUG)
-            printf("%% Time sync: %s %2d %s %d, ", sDayOfWeek[tmLocalTime.tm_wday],
-                   tmLocalTime.tm_mday,
-                   sMonName[tmLocalTime.tm_mon],
-                   tmLocalTime.tm_year + 1900);
-            printf("%02d:%02d:%02d\n", tmLocalTime.tm_hour, tmLocalTime.tm_min, tmLocalTime.tm_sec);
-#endif
-            // Check for DST change since last time sync
-            if (iSaveDST != tmLocalTime.tm_isdst)
+            // Check clock against system time
+            // Get current system date/time
+            ltime = time(NULL);
+            timenow = localtime(&ltime);
+
+            if (ReadDateTime(sTimeBuf) == 0)
             {
-                if (SetDateTime('6') < 0)
-                    LogMessage(xCmd.time, "--Set clock DST failed--\n");
-                iSaveDST = tmLocalTime.tm_isdst;
+                // Check for drift of >3 sec.
+                if ((abs(sTimeBuf[1] - timenow->tm_sec) > 3) ||
+                    (iSaveDST != timenow->tm_isdst))
+                {
+                    if (SetDateTime('6', timenow) < 0)
+                        LogMessage(xCmd.time, "--Clock sync failed--\n");
+
+                    iSaveDST = timenow->tm_isdst;
+#if defined(DEBUG)
+                    printf("%% Time sync: %s %2d %s %d, ", sDayOfWeek[timenow->tm_wday],
+                           timenow->tm_mday,
+                           sMonName[timenow->tm_mon],
+                           timenow->tm_year + 1900);
+                    printf("%02d:%02d:%02d\n", timenow->tm_hour, timenow->tm_min, timenow->tm_sec);
+#endif
+                    LogMessage(xCmd.time, "--Clock sync or DST--\n");
+#if defined(ONION)
+                    if (bOnionDpy)
+                    {
+                        oledSetCursor(0, 0);
+                        snprintf(oledBuf, OBUFSIZE, "ID4001 v%s reset", VERSION);
+                        oledWrite(oledBuf);
+                        oledSetCursor(1, 0);
+                        snprintf(oledBuf, OBUFSIZE, " %02d-%s-%d %02d:%02d", timenow->tm_mday, sMonName[timenow->tm_mon],
+                                 timenow->tm_year + 1900, timenow->tm_hour, timenow->tm_min);
+                        oledWrite(oledBuf);
+                    }
+#endif
+                }
             }
             break;
 
         case ID4_TIME_SET:
-            if (SetDateTime('6') < 0)
+            if (SetDateTime('6', NULL) < 0)
                 LogMessage(xCmd.time, "--Set clock failed--\n");
+
             iSaveDST = tmLocalTime.tm_isdst;
             break;
 
@@ -198,6 +223,10 @@ void LogMessage(int xTime, char *sMsg)
 // Open/Append current log file
 int OpenLog(void)
 {
+    // Do nothing if no path
+    if (!sWLogPath)
+        return FALSE;
+
     hLog = fopen(sLogPath, "a");
     if (hLog == NULL)
     {
@@ -243,8 +272,12 @@ int NewLog(int xTime)
     int		nRes;
     int		nRet = FALSE;
 
+    // No action if no path
+    if (!sWLogPath)
+        return TRUE;
+
     // Create path name from date (/mmmyy)
-    nOut = sprintf(sLogPath, LOCAL_LOG_PATH "/%s%02d", sMonName[tmLocalTime.tm_mon], tmLocalTime.tm_year - 100);
+    nOut = sprintf(sLogPath, "%s/%s%02d", sWLogPath, sMonName[tmLocalTime.tm_mon], tmLocalTime.tm_year - 100);
     if (stat(sLogPath, &xInfo))
     {
         if ((errno == ENOTDIR) || (errno == ENOENT))

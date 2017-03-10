@@ -66,6 +66,13 @@ int bWebEnable;
 int bWebOnly;
 int bLogWeather;
 static int cImmediate;
+char *sWLogPath;
+
+#if defined(ONION)
+// TRUE if display attached
+int bOnionDpy;
+char oledBuf[OBUFSIZE];
+#endif
 
 // Threads, mutexes and queues
 pthread_t   tWebIO;
@@ -80,8 +87,6 @@ pthread_mutex_t id4_mutex;
 // Timer message queue
 struct threadqueue id4_mq;
 
-#define MQ_NAME	"/ID4_MQ"
-
 #if defined(RECORD_MODE)
 // File handle for logging
 FILE *fLog;
@@ -90,7 +95,7 @@ int bRecording;
 #endif // defined
 //-------------------------------------------------------------------------------
 
-// Timer proc -- called from 1S recurring timer
+// Timer proc -- called from 1M recurring timer
 static void do_timer_proc(int sig, siginfo_t *si, void *uc)
 {
     int rc = 0;
@@ -153,6 +158,18 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
     return;
 }
 
+void do_time_sync(int signo)
+{
+    time_t xCmdTime = (60 * tmLocalTime.tm_hour) + tmLocalTime.tm_min;
+
+    if (signo == SIGUSR1)
+    {
+        // Check if clock needs correcting
+        thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_TIME_SYNC);
+    }
+
+    return;
+}
 //-------------------------------------------------------------------------------
 
 int ReSyncID4(void)
@@ -192,8 +209,8 @@ int ReSyncID4(void)
 
 void ShowHelp(void)
 {
-    printf("id4-pi Control and reporting for Heath ID4001 V%d.%d\n\n", VERSION_MAJOR, VERSION_MINOR);
-    printf("id4-pi [options]\n\n");
+    printf("id4001 Control and reporting for Heath ID4001 v%s\n\n", VERSION);
+    printf("id4001 [options]\n\n");
     printf(" options:\n");
     printf("   -s name     Serial device suffix (default: USB0)\n");
     printf("   -W          Show current time/weather data and exit\n");
@@ -206,16 +223,17 @@ void ShowHelp(void)
     printf("   -Z          Turn off weather logging\n");
     printf("   -R          Web server only (implies -Z)\n");
     printf("   -r          Record serial comms to file: weather.log\n");
+    printf("   -l path     Path for weather log files\n");
 
     return;
 }
 
 void parse_options(int argc, char **argv)
 {
-    int opt;
+    int opt, nSize;
 
     optind = 0;
-    while ((opt = getopt(argc, argv, "?Bhs:CTWVMHrRZD")) != -1)
+    while ((opt = getopt(argc, argv, "?Bhs:l:CTWVMHrRZD")) != -1)
     {
         switch (opt)
         {
@@ -231,6 +249,18 @@ void parse_options(int argc, char **argv)
             }
             // Save port name
             strcpy(sPortName, optarg);
+            break;
+
+        case 'l':
+            // Path to weather logging data
+            nSize = strlen(optarg);
+            if (nSize > 0)
+            {
+                sWLogPath = strdup(optarg);
+                // Remove trailing matchstick
+                if (sWLogPath[nSize] == '/')
+                    sWLogPath[nSize] = '\0';
+            }
             break;
 
         // Immediate commands
@@ -290,6 +320,7 @@ int main(int argc, char **argv)
 #if defined(RECORD_MODE)
     bRecording = FALSE;
 #endif
+    sWLogPath = NULL;
     strcpy(sPortName, "USB0");
     cImmediate = 0;
     fPort = -1;
@@ -331,7 +362,7 @@ int main(int argc, char **argv)
     // Check for immediate command options
     switch (cImmediate)
     {
-    case'T':
+    case 'T':
         // Set ID4001 time to system time
         rc = ReadDateTime(sTimeBuf);
         if (rc != 0)
@@ -340,7 +371,7 @@ int main(int argc, char **argv)
         ShowDateTime("Time before: ", sTimeBuf);
 
         printf("Setting date-time to system time...\n");
-        SetDateTime('6');
+        SetDateTime('6', NULL);
         rc = ReadDateTime(sTimeBuf);
         if (rc != 0)
             exit(EXIT_FAILURE);
@@ -407,6 +438,16 @@ int main(int argc, char **argv)
     setvbuf(stdout, NULL, _IONBF, 0);
     setlinebuf(stdout);
 
+#if defined(ONION)
+    onionSetVerbosity(ONION_VERBOSITY_NONE);
+    bOnionDpy = FALSE;
+    if (oledCheckInit() == EXIT_SUCCESS)
+    {
+        oledDriverInit();
+        bOnionDpy = TRUE;
+    }
+#endif
+
     if (!bWebOnly)
     {
         // create the message queue
@@ -442,6 +483,9 @@ int main(int argc, char **argv)
             printf("thread_queue_add failure: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
+
+        // Setup USR1 signal handler (re-sync time)
+        signal(SIGUSR1, do_time_sync);
 
         // Setup timer signal hander
         sa.sa_flags = SA_SIGINFO | SA_RESTART;
@@ -480,6 +524,19 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
     }
+
+#if defined(ONION)
+    if (bOnionDpy)
+    {
+        oledSetCursor(0, 0);
+        snprintf(oledBuf, OBUFSIZE, "ID4001 v%s started", VERSION);
+        oledWrite(oledBuf);
+        oledSetCursor(1, 0);
+        snprintf(oledBuf, OBUFSIZE, " %02d-%s-%d %02d:%02d", tmLocalTime.tm_mday, sMonName[tmLocalTime.tm_mon],
+                 tmLocalTime.tm_year + 1900, tmLocalTime.tm_hour, tmLocalTime.tm_min);
+        oledWrite(oledBuf);
+    }
+#endif
 
     if (bWebEnable)
     {
