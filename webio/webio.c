@@ -72,6 +72,7 @@ wi_init()
 {
     struct sockaddr_in   wi_sin;
     int      error;
+    int      enabl = 1;
 
     wi_state = WIS_IDLE;
 
@@ -83,6 +84,20 @@ wi_init()
         return WIE_SOCKET;
     }
 
+    if (setsockopt(wi_listen, SOL_SOCKET, SO_REUSEADDR, &enabl, sizeof(int)) < 0)
+    {
+	closesocket(wi_listen);
+	return WIE_SOCKET;
+    }
+
+#if defined(SO_REUSEPORT)
+    if (setsockopt(wi_listen, SOL_SOCKET, SO_REUSEPORT, &enabl, sizeof(int)) < 0)
+    {
+	closesocket(wi_listen);
+	return WIE_SOCKET;
+    }
+#endif
+
     wi_sin.sin_family = AF_INET;
     wi_sin.sin_addr.s_addr = htonl(INADDR_ANY);
     wi_sin.sin_port = htons( (short)httpport);
@@ -90,6 +105,7 @@ wi_init()
     if(error)
     {
         dprintf("Error %d binding web server (%s)\n", errno, strerror(errno));
+	closesocket(wi_listen);
         return WIE_SOCKET;
     }
 
@@ -97,6 +113,7 @@ wi_init()
     if (error)
     {
         dprintf("Error %d starting listen (%s)\n", errno, strerror(errno));
+	closesocket(wi_listen);
         return WIE_SOCKET;
     }
 

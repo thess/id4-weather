@@ -21,7 +21,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define REMOTE_URL      "ftp://dp1/"
+#define REMOTE_URL      "ftp://hass/"
 
 int ftpUpload(char *srcFile, char *dstFile)
 {

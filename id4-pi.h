@@ -18,7 +18,8 @@
 
 #if defined(ONION)
 #include <oled-exp.h>
-#define OBUFSIZE	128
+// Line size is 21 chars
+#define OBUFSIZE	22
 #endif
 
 extern int ReSyncID4(void);
@@ -47,6 +48,7 @@ extern int bWebEnable;
 #if defined(ONION)
 extern int bOnionDpy;
 extern char oledBuf[];
+extern void dpyStatus(char *msg, struct tm *timenow);
 #endif
 
 #endif // ID4_PI_H_INCLUDED

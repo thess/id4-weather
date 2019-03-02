@@ -44,6 +44,7 @@ static char *sFileBuf;
 static char sLogPath[64];
 static char sTargetName[16];
 static unsigned char sTimeBuf[8];
+static int iSaveDST = 0;
 
 #define WEATHER_LOG_HEADER1	"Time,Indoor,Outdoor,Wind,Dir,Pressure\n"
 #define WEATHER_LOG_HEADER2	"Midnite,TLow,Time,THigh,Time,Wind,Time,PLow,Time,PHigh,Time\n"
@@ -53,7 +54,6 @@ void *xID4Clock(void *args)
 {
     struct threadqueue *id4_mq = (struct threadqueue *)args;
     struct threadmsg msg;
-    int iSaveDST = 0;
     ID4Cmd  xCmd;
     char *xBuf;
     time_t ltime;
@@ -128,16 +128,21 @@ void *xID4Clock(void *args)
             if (SetDateTime('6', NULL) < 0)
                 LogMessage(xCmd.time, "--Set clock failed--\n");
 
+            // For time sync check
+            iSaveDST = tmLocalTime.tm_isdst;
 
             // Reset weather data
             printf("MIDNITE: Reset weather min/max data\n");
             ID4_LOCK();
             SendSingleCmd('C');
             ID4_UNLOCK();
-            // For time sync check
-            iSaveDST = tmLocalTime.tm_isdst;
             printf("MIDNITE: Done\n");
-
+#if defined(ONION)
+            if (bOnionDpy)
+            {
+                dpyStatus("MIDNITE", timenow);
+            }
+#endif
             break;
 
         case ID4_TIME_SYNC:
@@ -146,38 +151,25 @@ void *xID4Clock(void *args)
             ltime = time(NULL);
             timenow = localtime(&ltime);
 
-            if (ReadDateTime(sTimeBuf) == 0)
+            // Force time-set at 1 minute before hour
+            if (timenow->tm_min == 59)
             {
-                // Check for drift of >3 sec.
-                if ((abs(sTimeBuf[1] - timenow->tm_sec) > 3) ||
+                if (SetDateTime('6', timenow) < 0)
+                    LogMessage(xCmd.time, "--Clock sync failed--\n");
+
+	    } else {
+		// Check DST change
+                if ((timenow->tm_min == 1) &&
                     (iSaveDST != timenow->tm_isdst))
                 {
                     if (SetDateTime('6', timenow) < 0)
                         LogMessage(xCmd.time, "--Clock sync failed--\n");
 
                     iSaveDST = timenow->tm_isdst;
-#if defined(DEBUG)
-                    printf("%% Time sync: %s %2d %s %d, ", sDayOfWeek[timenow->tm_wday],
-                           timenow->tm_mday,
-                           sMonName[timenow->tm_mon],
-                           timenow->tm_year + 1900);
-                    printf("%02d:%02d:%02d\n", timenow->tm_hour, timenow->tm_min, timenow->tm_sec);
-#endif
-                    LogMessage(xCmd.time, "--Clock sync or DST--\n");
-#if defined(ONION)
-                    if (bOnionDpy)
-                    {
-                        oledSetCursor(0, 0);
-                        snprintf(oledBuf, OBUFSIZE, "ID4001 v%s reset", VERSION);
-                        oledWrite(oledBuf);
-                        oledSetCursor(1, 0);
-                        snprintf(oledBuf, OBUFSIZE, " %02d-%s-%d %02d:%02d", timenow->tm_mday, sMonName[timenow->tm_mon],
-                                 timenow->tm_year + 1900, timenow->tm_hour, timenow->tm_min);
-                        oledWrite(oledBuf);
-                    }
-#endif
-                }
-            }
+                    LogMessage(xCmd.time, "--Clock sync for DST--\n");
+		}
+	    }
+
             break;
 
         case ID4_TIME_SET:

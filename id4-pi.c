@@ -141,8 +141,9 @@ static void do_timer_proc(int sig, siginfo_t *si, void *uc)
 
     }
 
-    // Read RTC and re-sync time (1 min past hour)
-    if (tmLocalTime.tm_min == 1)
+    // Read RTC and re-sync time (1 min before and after hour)
+    if ((tmLocalTime.tm_min == 59) ||
+	(tmLocalTime.tm_min == 1))
     {
         // Read and set system time
         rc = thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_TIME_SYNC);
@@ -165,11 +166,45 @@ void do_time_sync(int signo)
     if (signo == SIGUSR1)
     {
         // Check if clock needs correcting
-        thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_TIME_SYNC);
+        thread_queue_add(&id4_mq, (void *)xCmdTime, ID4_TIME_SET);
     }
 
     return;
 }
+
+#if defined(ONION)
+//-------------------------------------------------------------------------------
+// Onion display routines
+
+void dpyPadLine(int nc)
+{
+    oledBuf[OBUFSIZE - 1] = '\0';
+    if (nc < 21)
+    {
+        memset(&oledBuf[nc], ' ', OBUFSIZE - nc - 2);
+    }
+    return;
+}
+
+void dpyStatus(char *msg, struct tm *timenow)
+{
+    int nc;
+
+    oledSetCursor(0, 0);
+    nc = snprintf(oledBuf, OBUFSIZE, "ID4001 v%s %s", VERSION, msg);
+    dpyPadLine(nc);
+    oledWrite(oledBuf);
+
+    oledSetCursor(1, 0);
+    nc = snprintf(oledBuf, OBUFSIZE, " %02d-%s-%d %02d:%02d", timenow->tm_mday, sMonName[timenow->tm_mon],
+             timenow->tm_year + 1900, timenow->tm_hour, timenow->tm_min);
+    dpyPadLine(nc);
+    oledWrite(oledBuf);
+
+    return;
+}
+#endif
+
 //-------------------------------------------------------------------------------
 
 int ReSyncID4(void)
@@ -528,13 +563,7 @@ int main(int argc, char **argv)
 #if defined(ONION)
     if (bOnionDpy)
     {
-        oledSetCursor(0, 0);
-        snprintf(oledBuf, OBUFSIZE, "ID4001 v%s started", VERSION);
-        oledWrite(oledBuf);
-        oledSetCursor(1, 0);
-        snprintf(oledBuf, OBUFSIZE, " %02d-%s-%d %02d:%02d", tmLocalTime.tm_mday, sMonName[tmLocalTime.tm_mon],
-                 tmLocalTime.tm_year + 1900, tmLocalTime.tm_hour, tmLocalTime.tm_min);
-        oledWrite(oledBuf);
+        dpyStatus("started", &tmLocalTime);
     }
 #endif
 
